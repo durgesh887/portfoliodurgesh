@@ -73,20 +73,35 @@ if('IntersectionObserver' in window){
   }
 })();
 
-// contact form -> mailto (static site, no backend)
+// contact form -> Web3Forms API (delivers to inbox)
 const form = document.getElementById('contact-form');
 if(form){
-  form.addEventListener('submit', function(e){
+  const submitBtn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const fd = new FormData(form);
-    const first = fd.get('first') || '';
-    const last = fd.get('last') || '';
-    const email = fd.get('email') || '';
-    const subject = fd.get('subject') || 'Project inquiry';
-    const message = fd.get('message') || '';
-    const body = `Name: ${first} ${last}\nEmail: ${email}\n\n${message}`;
-    window.location.href = `mailto:durgeshsharma96100@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const formData = new FormData(form);
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Sending...';
+    submitBtn.disabled = true;
+
     const msg = document.getElementById('form-msg');
-    if(msg){ msg.classList.add('show'); msg.textContent = 'Opening your email app…'; }
+    try {
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if(response.ok){
+        if(msg){ msg.classList.add('show'); msg.textContent = '\u2713 Message sent! I\'ll get back to you soon.'; msg.style.color = 'var(--accent)'; }
+        form.reset();
+      } else {
+        if(msg){ msg.classList.add('show'); msg.textContent = 'Error: ' + data.message; msg.style.color = '#ef4444'; }
+      }
+    } catch(error){
+      if(msg){ msg.classList.add('show'); msg.textContent = 'Something went wrong. Please try again.'; msg.style.color = '#ef4444'; }
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
   });
 }
